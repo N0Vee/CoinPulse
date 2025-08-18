@@ -16,6 +16,36 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /* Improve mobile scrolling */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile-first responsive design */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+}
+
+/* Improve touch targets for mobile */
+button, a, [role="button"] {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+@media (max-width: 640px) {
+  button, a, [role="button"] {
+    min-height: 40px;
+  }
+}
+
+/* Prevent text selection on mobile for better UX */
+.touch-manipulation {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* Custom animations for enhanced loading */
@@ -54,12 +84,31 @@ body {
   height: 100%;
   max-height: 100%;
   overflow: hidden;
+  /* Improve mobile chart performance */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 /* Simple canvas constraints */
 .chart-container canvas {
   max-height: 100% !important;
   max-width: 100% !important;
+  /* Improve mobile rendering */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: optimize-contrast;
+}
+
+/* Mobile chart optimizations */
+@media (max-width: 640px) {
+  .chart-container {
+    /* Reduce minimum height on mobile */
+    min-height: 200px;
+  }
+  
+  .chart-container canvas {
+    /* Optimize touch events on mobile */
+    touch-action: pan-x pan-y;
+  }
 }
 
 @keyframes fadeInUp {
@@ -127,7 +176,7 @@ body {
   animation: slideInRight 0.6s ease-out forwards;
 }
 
-/* Staggered animation delays */
+/* Staggered animation delays - reduced for mobile */
 .animate-delay-75 { animation-delay: 75ms; }
 .animate-delay-150 { animation-delay: 150ms; }
 .animate-delay-225 { animation-delay: 225ms; }
@@ -135,3 +184,35 @@ body {
 .animate-delay-500 { animation-delay: 500ms; }
 .animate-delay-700 { animation-delay: 700ms; }
 .animate-delay-1000 { animation-delay: 1000ms; }
+
+/* Reduce animation delays on mobile for better perceived performance */
+@media (max-width: 640px) {
+  .animate-delay-75 { animation-delay: 50ms; }
+  .animate-delay-150 { animation-delay: 75ms; }
+  .animate-delay-225 { animation-delay: 100ms; }
+  .animate-delay-300 { animation-delay: 125ms; }
+  .animate-delay-500 { animation-delay: 200ms; }
+  .animate-delay-700 { animation-delay: 250ms; }
+  .animate-delay-1000 { animation-delay: 300ms; }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .animate-delay-75,
+  .animate-delay-150,
+  .animate-delay-225,
+  .animate-delay-300,
+  .animate-delay-500,
+  .animate-delay-700,
+  .animate-delay-1000 {
+    animation-delay: 0ms;
+  }
+  
+  .fade-in-up,
+  .slide-in-left,
+  .slide-in-right {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

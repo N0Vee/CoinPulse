@@ -43,28 +43,28 @@ const ChartSection = React.memo(function ChartSection({ chartData, title, descri
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    // Explicit layout constraints
+    // Mobile-optimized layout constraints
     layout: {
       padding: {
-        top: 10,
-        right: 10,
-        bottom: 10,
-        left: 10
+        top: 8,
+        right: 8,
+        bottom: 8,
+        left: 8
       }
     },
-    // Performance optimizations (safer options)
+    // Performance optimizations for mobile
     animation: {
-      duration: 300, // Reduced animation for better performance
+      duration: 200, // Reduced animation for better mobile performance
     },
-    // Remove problematic parsing options
-    // Optimize for large datasets
+    // Optimize elements for mobile performance
     elements: {
       point: {
-        radius: 0, // Hide points by default for better performance
-        hoverRadius: 6,
+        radius: 0, // Hide points by default for better mobile performance
+        hoverRadius: 4, // Smaller hover radius for mobile
       },
       line: {
-        tension: 0.1, // Reduce tension for better performance
+        tension: 0.1,
+        borderWidth: window.innerWidth < 640 ? 1.5 : 2, // Thinner lines on mobile
       },
     },
     plugins: {
@@ -77,7 +77,13 @@ const ChartSection = React.memo(function ChartSection({ chartData, title, descri
         bodyColor: '#E5E7EB',
         borderColor: '#4B5563',
         borderWidth: 1,
-        cornerRadius: 8,
+        cornerRadius: 6, // Smaller radius for mobile
+        titleFont: {
+          size: window.innerWidth < 640 ? 11 : 12
+        },
+        bodyFont: {
+          size: window.innerWidth < 640 ? 10 : 11
+        },
         displayColors: false,
         // Optimize tooltip for performance
         filter: function(tooltipItem) {
@@ -99,10 +105,9 @@ const ChartSection = React.memo(function ChartSection({ chartData, title, descri
         ticks: {
           color: '#9CA3AF',
           font: {
-            size: 12
+            size: window.innerWidth < 640 ? 10 : 12
           },
-          // Optimize tick display for large datasets
-          maxTicksLimit: 10,
+          maxTicksLimit: window.innerWidth < 640 ? 6 : 10, // Fewer ticks on mobile
           autoSkip: true,
         }
       },
@@ -114,10 +119,14 @@ const ChartSection = React.memo(function ChartSection({ chartData, title, descri
         ticks: {
           color: '#9CA3AF',
           font: {
-            size: 12
+            size: window.innerWidth < 640 ? 10 : 12
           },
-          maxTicksLimit: 8,
+          maxTicksLimit: window.innerWidth < 640 ? 6 : 8, // Fewer ticks on mobile
           callback: function (value) {
+            // Shorter format on mobile
+            if (window.innerWidth < 640) {
+              return '$' + (value >= 1000 ? (value / 1000).toFixed(0) + 'k' : value.toLocaleString());
+            }
             return '$' + value.toLocaleString();
           }
         }
@@ -130,25 +139,25 @@ const ChartSection = React.memo(function ChartSection({ chartData, title, descri
   }), []);
 
   return (
-    <div className="bg-gray-800 rounded-2xl border border-gray-700 p-6 shadow-xl">
-      <div className="mb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
-            <p className="text-sm text-gray-400">{description}</p>
+    <div className="bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-700 p-4 sm:p-6 shadow-xl">
+      <div className="mb-3 sm:mb-4">
+        <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-2 sm:gap-0">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base sm:text-lg font-semibold text-white mb-1 sm:mb-2 truncate">{title}</h3>
+            <p className="text-xs sm:text-sm text-gray-400 truncate">{description}</p>
           </div>
-          <div className="text-xs px-2 py-1 bg-green-600 text-green-100 rounded-full">
+          <div className="text-xs px-2 py-1 bg-green-600 text-green-100 rounded-full shrink-0">
             Binance API
           </div>
         </div>
       </div>
       {validatedChartData ? (
-        <div className="h-64 max-h-64 overflow-hidden">
+        <div className="h-48 sm:h-64 lg:h-80 max-h-80 overflow-hidden chart-container">
           <Line data={validatedChartData} options={chartOptions} />
         </div>
       ) : (
-        <div className="h-64 max-h-64 flex items-center justify-center">
-          <div className="text-gray-400">No chart data available</div>
+        <div className="h-48 sm:h-64 lg:h-80 max-h-80 flex items-center justify-center">
+          <div className="text-gray-400 text-sm">No chart data available</div>
         </div>
       )}
     </div>

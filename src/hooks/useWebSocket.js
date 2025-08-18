@@ -9,7 +9,7 @@ export const useWebSocket = () => {
     if (typeof window === 'undefined') {
       return;
     }
-    
+
     try {
       // Create WebSocket connection to Binance combined streams
       const streams = Object.keys(binanceSymbols)

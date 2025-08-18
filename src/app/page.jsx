@@ -254,41 +254,43 @@ export default function Home() {
       />
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 lg:py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left Column - Content */}
-          <div>
-            <div className="mb-8">
-              <h1 className="text-5xl lg:text-6xl font-light text-white mb-6">
+          <div className="text-center lg:text-left">
+            <div className="mb-6 sm:mb-8">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-light text-white mb-4 sm:mb-6 leading-tight">
                 Track Crypto<br />
                 <span className="font-semibold text-blue-400">In Real-Time</span>
               </h1>
-              <p className="text-xl text-gray-300 font-light mb-8 leading-relaxed">
+              <p className="text-lg sm:text-xl text-gray-300 font-light mb-6 sm:mb-8 leading-relaxed">
                 View live charts and prices for Bitcoin, Ethereum, and more. Clear design, real-time updates.
               </p>
             </div>
           </div>
 
           {/* Right Column - Dynamic Chart */}
-          <Suspense fallback={
-            <div className="h-96 flex items-center justify-center bg-gray-800/50 backdrop-blur-sm rounded-3xl border border-gray-700">
-              <LoadingSpinner size="lg" text="Loading chart..." variant="pulse" color="blue" />
-            </div>
-          }>
-            <ChartSection
-              title={getChartTitle}
-              chartData={getCurrentChart}
-              chartOptions={chartOptions}
-            />
-          </Suspense>
+          <div className="w-full">
+            <Suspense fallback={
+              <div className="h-64 sm:h-80 lg:h-96 flex items-center justify-center bg-gray-800/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl border border-gray-700">
+                <LoadingSpinner size="lg" text="Loading chart..." variant="pulse" color="blue" />
+              </div>
+            }>
+              <ChartSection
+                title={getChartTitle}
+                chartData={getCurrentChart}
+                chartOptions={chartOptions}
+              />
+            </Suspense>
+          </div>
         </div>
       </div>
 
       {/* Live Prices Section */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-light text-white mb-2">Live Prices</h2>
-          <p className="text-gray-400 mb-6">Real-time cryptocurrency data via Binance WebSocket</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-light text-white mb-2">Live Prices</h2>
+          <p className="text-gray-400 mb-4 sm:mb-6 text-sm sm:text-base">Real-time cryptocurrency data via Binance WebSocket</p>
 
           {/* Advanced Filters */}
           <AdvancedFilters
@@ -302,7 +304,7 @@ export default function Home() {
         {/* Crypto Table */}
         {loading && cryptoData.length === 0 ? (
           <div className="space-y-4">
-            <div className="flex justify-center items-center py-8">
+            <div className="flex justify-center items-center py-6 sm:py-8">
               <LoadingSpinner 
                 size="lg" 
                 text="Loading cryptocurrency data..." 
@@ -310,41 +312,41 @@ export default function Home() {
                 color="blue"
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {[...Array(8)].map((_, index) => (
                 <CryptoCardSkeleton key={index} index={index} />
               ))}
             </div>
           </div>
         ) : cryptoData.length === 0 ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="text-gray-400 text-center">
-              <div className="mb-2">No data received yet</div>
-              <div className="text-sm">Waiting for WebSocket data...</div>
+          <div className="flex justify-center items-center h-48 sm:h-64">
+            <div className="text-gray-400 text-center px-4">
+              <div className="mb-2 text-sm sm:text-base">No data received yet</div>
+              <div className="text-xs sm:text-sm">Waiting for WebSocket data...</div>
             </div>
           </div>
         ) : filteredData.length === 0 && searchTerm ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="text-gray-400 text-center">
-              <div className="mb-2">No cryptocurrencies found</div>
-              <div className="text-sm">Try adjusting your search term or filters</div>
+          <div className="flex justify-center items-center h-48 sm:h-64">
+            <div className="text-gray-400 text-center px-4">
+              <div className="mb-2 text-sm sm:text-base">No cryptocurrencies found</div>
+              <div className="text-xs sm:text-sm">Try adjusting your search term or filters</div>
             </div>
           </div>
         ) : (
           <div>
             {/* Results Counter */}
             {filteredData.length > 0 && (
-              <div className="flex justify-between items-center mb-6">
-                <div className="text-gray-400">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 space-y-2 sm:space-y-0">
+                <div className="text-gray-400 text-sm sm:text-base">
                   Showing {filteredData.length} of {cryptoData.length} cryptocurrencies
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-xs sm:text-sm text-gray-500">
                   Last updated: {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Never'}
                 </div>
               </div>
             )}
             
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
               {filteredData.map((crypto, index) => (
                 <CryptoCard
                   key={crypto.id}
@@ -360,9 +362,9 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-gray-800 border-t border-gray-700 mt-16">
-        <div className="max-w-7xl mx-auto px-6 py-8 text-center">
-          <p className="text-gray-400 text-sm">
+      <footer className="bg-gray-800 border-t border-gray-700 mt-12 sm:mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 text-center">
+          <p className="text-gray-400 text-xs sm:text-sm">
             Real-time data powered by Binance WebSocket • Charts by CoinGecko API
           </p>
         </div>

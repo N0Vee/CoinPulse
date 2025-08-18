@@ -465,66 +465,86 @@ export default function CoinDetailPage() {
         onReconnect={handleRefresh}
       />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Header */}
-        <div className="flex items-center mb-8">
+        <div className="flex items-center mb-6 sm:mb-8">
           <button
             onClick={() => router.back()}
-            className="mr-4 p-2 text-gray-400 hover:text-white transition-colors"
+            className="mr-3 sm:mr-4 p-2 text-gray-400 hover:text-white active:text-white transition-colors touch-manipulation"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <div className="flex items-center">
+          <div className="flex items-center min-w-0 flex-1">
             <img
               src={`https://assets.coincap.io/assets/icons/${symbol.toLowerCase()}@2x.png`}
               alt={coinInfo.name}
-              className="w-12 h-12 mr-4"
+              className="w-10 h-10 sm:w-12 sm:h-12 mr-3 sm:mr-4 shrink-0"
               onError={(e) => {
                 e.target.style.display = 'none';
               }}
             />
-            <div>
-              <h1 className="text-3xl font-bold text-white">{coinInfo.name}</h1>
-              <p className="text-gray-400">{symbol}</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white truncate">{coinInfo.name}</h1>
+              <p className="text-gray-400 text-sm sm:text-base">{symbol}</p>
             </div>
+          </div>
+          
+          {/* Favorite Button */}
+          <div className="ml-4">
+            <FavoriteButton
+              crypto={{
+                symbol: symbol,
+                name: coinInfo.name,
+                id: coinInfo.id
+              }}
+              isFavorite={isFavorite(symbol)}
+              onToggle={toggleFavorite}
+              size="lg"
+              showLabel={true}
+            />
           </div>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {/* Main Chart Area - Full Width */}
-          <div className="bg-gray-800 rounded-2xl border border-gray-700 p-6">
+          <div className="bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-700 p-4 sm:p-6">
             {/* Chart Controls */}
-            <div className="flex flex-wrap items-center justify-between mb-6">
-              <div className="flex items-center space-x-4 mb-4 lg:mb-0">
-                <div className="text-2xl font-bold text-white">
-                  {coinData && formatPrice(coinData.price)}
-                </div>
-                {coinData && (
-                  <div className={`flex items-center text-sm px-2 py-1 rounded-full ${
-                    coinData.change24h >= 0
-                      ? 'bg-green-900 text-green-400'
-                      : 'bg-red-900 text-red-400'
-                  }`}>
-                    <svg className={`w-3 h-3 mr-1 ${coinData.change24h >= 0 ? '' : 'rotate-180'}`} fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                    </svg>
-                    {formatPercentage(coinData.change24h)}
+            <div className="mb-4 sm:mb-6">
+              {/* Price and Status Row */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
+                <div className="flex items-center space-x-2 sm:space-x-4">
+                  <div className="text-xl sm:text-2xl font-bold text-white">
+                    {coinData && formatPrice(coinData.price)}
                   </div>
-                )}
-                  {/* Real-time indicator */}
-                  {connectionStatus === 'Connected' && lastUpdate && (
-                    <div className="flex items-center text-xs text-green-400">
-                      <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
-                      Live
+                  {coinData && (
+                    <div className={`flex items-center text-xs sm:text-sm px-2 py-1 rounded-full ${
+                      coinData.change24h >= 0
+                        ? 'bg-green-900 text-green-400'
+                        : 'bg-red-900 text-red-400'
+                    }`}>
+                      <svg className={`w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 ${coinData.change24h >= 0 ? '' : 'rotate-180'}`} fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
+                      {formatPercentage(coinData.change24h)}
                     </div>
                   )}
                 </div>
                 
-                {/* Timeframe Controls */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="text-sm text-gray-400 mr-2">Timeframe:</div>
+                {/* Real-time indicator */}
+                {connectionStatus === 'Connected' && lastUpdate && (
+                  <div className="flex items-center text-xs text-green-400">
+                    <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                    Live
+                  </div>
+                )}
+              </div>
+                
+              {/* Timeframe Controls */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="text-xs sm:text-sm text-gray-400 mr-1 sm:mr-2">Timeframe:</div>
+                <div className="flex flex-wrap gap-2">
                   {timeframeOptions.map((option) => (
                     <button
                       key={option.value}
@@ -543,10 +563,10 @@ export default function CoinDetailPage() {
                           await loadHistoricalData(option.value);
                         }
                       }}
-                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                      className={`px-2.5 sm:px-3 py-1 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-colors touch-manipulation ${
                         timeframe === option.value
                           ? 'bg-blue-600 text-white'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600 active:bg-gray-600'
                       }`}
                     >
                       {option.label}
@@ -566,7 +586,7 @@ export default function CoinDetailPage() {
                     {chartData.datasets && chartData.datasets[0] && chartData.datasets[0].data && (
                       <div className="text-xs text-gray-500 mb-2 text-right">
                         Data points: {chartData.datasets[0].data.length} | 
-                        Timeframe: {timeframe === 'realtime' ? 'Real-time' : `${timeframe}${timeframe === '1' ? 'D' : timeframe === '7' ? 'D' : timeframe === '30' ? 'D' : timeframe === '90' ? 'D' : 'D'}`}
+                        Timeframe: {timeframe === 'realtime' ? 'Real-time' : `${timeframe}D`}
                         {timeframe !== 'realtime' && (
                           <span className="ml-2 px-1 py-0.5 bg-green-600 text-green-100 rounded text-xs">
                             Binance API
@@ -1016,6 +1036,7 @@ export default function CoinDetailPage() {
               </div>
             </div>
           </div>
+        </div>
       </div>
     </div>
   );
