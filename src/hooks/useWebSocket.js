@@ -55,7 +55,7 @@ export const useWebSocket = () => {
             }
           }
         } catch (error) {
-          console.error('Error parsing WebSocket data:', error);
+          // Handle parsing errors silently
         }
       };
 
@@ -74,7 +74,6 @@ export const useWebSocket = () => {
       };
 
     } catch (error) {
-      console.error('Error creating WebSocket connection:', error);
       onStatusChange('Error');
     }
   }, []);

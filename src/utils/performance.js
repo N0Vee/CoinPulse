@@ -102,9 +102,6 @@ export const measurePerformance = async (name, fn) => {
   performance.mark(endMark);
   performance.measure(measureName, startMark, endMark);
 
-  const measure = performance.getEntriesByName(measureName)[0];
-  console.log(`${name} took ${measure.duration.toFixed(2)}ms`);
-
   return result;
 };
 

@@ -1,6 +1,6 @@
-// Service for fetching chart data from CoinGecko API
+// Service for fetching chart data via local API proxy
 
-const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
+const API_BASE = '/api/coingecko';
 
 // Retry mechanism with exponential backoff
 const fetchWithRetry = async (url, options = {}, maxRetries = 2) => {
@@ -15,7 +15,6 @@ const fetchWithRetry = async (url, options = {}, maxRetries = 2) => {
       
       // Exponential backoff: wait 1s, then 2s, then 4s
       const delay = Math.pow(2, attempt) * 1000;
-      console.warn(`Fetch attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
@@ -24,31 +23,37 @@ const fetchWithRetry = async (url, options = {}, maxRetries = 2) => {
 export const fetchCoinChart = async (coinId, days = 7) => {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
     
     const response = await fetchWithRetry(
-      `${COINGECKO_API_BASE}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}&interval=daily`,
+      `${API_BASE}?coinId=${encodeURIComponent(coinId)}&days=${days}&interval=${days <= 1 ? 'hourly' : 'daily'}`,
       { 
         signal: controller.signal,
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'CoinPulse/1.0'
         }
       },
-      1 // Only 1 retry for basic charts
+      1 // Only 1 retry for API routes
     );
     
     clearTimeout(timeoutId);
     
     if (!response.ok) {
-      console.warn(`CoinGecko API error (${response.status}), using mock data for ${coinId}`);
       return generateMockPrices(coinId, days);
     }
     
-    const data = await response.json();
+    let data;
+    try {
+      const responseText = await response.text();
+      if (!responseText || responseText.trim() === '') {
+        return generateMockPrices(coinId, days);
+      }
+      data = JSON.parse(responseText);
+    } catch (jsonError) {
+      return generateMockPrices(coinId, days);
+    }
 
     if (!data || !data.prices || !Array.isArray(data.prices)) {
-      console.warn('Invalid data structure from API, using mock data');
       return generateMockPrices(coinId, days);
     }
 
@@ -59,13 +64,6 @@ export const fetchCoinChart = async (coinId, days = 7) => {
 
     return prices;
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.warn(`Request timeout for ${coinId}, using mock data`);
-    } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      console.warn(`Network error for ${coinId}, using mock data`);
-    } else {
-      console.error(`Error fetching chart data for ${coinId}:`, error);
-    }
     return generateMockPrices(coinId, days);
   }
 };
@@ -105,12 +103,11 @@ export const fetchChartData = async (coinId, days = 7) => {
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout for detailed data
 
     const response = await fetchWithRetry(
-      `${COINGECKO_API_BASE}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}&interval=${interval}`,
+      `${API_BASE}?coinId=${encodeURIComponent(coinId)}&days=${days}&interval=${interval}`,
       { 
         signal: controller.signal,
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'CoinPulse/1.0'
         }
       },
       2 // 2 retries for detailed charts
@@ -120,15 +117,22 @@ export const fetchChartData = async (coinId, days = 7) => {
     
     if (!response.ok) {
       // If API fails (401, rate limit, etc), generate mock data
-      console.warn(`CoinGecko API error (${response.status}) for ${coinId}, using mock data`);
       return generateMockChartData(coinId, days);
     }
     
-    const data = await response.json();
+    let data;
+    try {
+      const responseText = await response.text();
+      if (!responseText || responseText.trim() === '') {
+        return generateMockChartData(coinId, days);
+      }
+      data = JSON.parse(responseText);
+    } catch (jsonError) {
+      return generateMockChartData(coinId, days);
+    }
 
     // Check if data structure is valid
     if (!data || !data.prices || !Array.isArray(data.prices)) {
-      console.warn('Invalid data structure from API, using mock data');
       return generateMockChartData(coinId, days);
     }
 
@@ -153,13 +157,6 @@ export const fetchChartData = async (coinId, days = 7) => {
     // Create chart data
     return createChartData(prices, `${coinId} Price (USD)`, '#3B82F6', 'rgba(59, 130, 246, 0.1)');
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.warn(`Request timeout for ${coinId} detailed chart, using mock data`);
-    } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      console.warn(`Network error for ${coinId} detailed chart, using mock data`);
-    } else {
-      console.error(`Error fetching detailed chart data for ${coinId}:`, error);
-    }
     // Fallback to mock data on any error
     return generateMockChartData(coinId, days);
   }
@@ -167,14 +164,27 @@ export const fetchChartData = async (coinId, days = 7) => {
 
 // Generate mock chart data as fallback
 const generateMockChartData = (coinId, days) => {
-  const dataPoints = Math.min(days * 4, 100); // Limit data points
-  const basePrice = getBasePriceForCoin(coinId);
+  // Optimize data points based on timeframe to prevent performance issues
+  let dataPoints;
+  if (days <= 1) {
+    dataPoints = Math.min(days * 24, 24); // Hourly for 1 day max
+  } else if (days <= 7) {
+    dataPoints = Math.min(days * 4, 28); // 6-hour intervals, max 28 points
+  } else if (days <= 30) {
+    dataPoints = Math.min(days, 30); // Daily intervals, max 30 points  
+  } else if (days <= 90) {
+    dataPoints = Math.min(Math.floor(days / 3), 30); // 3-day intervals, max 30 points
+  } else {
+    dataPoints = Math.min(Math.floor(days / 7), 52); // Weekly intervals, max 52 points
+  }
   
+  const basePrice = getBasePriceForCoin(coinId);
   const prices = [];
   const now = new Date();
   
   for (let i = dataPoints - 1; i >= 0; i--) {
-    const date = new Date(now - i * (24 * 60 * 60 * 1000) / (dataPoints / days));
+    const timeMultiplier = days / dataPoints;
+    const date = new Date(now - i * timeMultiplier * 24 * 60 * 60 * 1000);
     let timeLabel;
     
     if (days <= 1) {
@@ -185,8 +195,9 @@ const generateMockChartData = (coinId, days) => {
       timeLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
     
-    // Generate realistic price movement
-    const variation = (Math.sin(i * 0.2) + Math.random() * 0.4 - 0.2) * 0.1;
+    // Generate realistic price movement with reduced volatility for longer timeframes
+    const volatilityFactor = Math.max(0.05, 1 / Math.sqrt(days)); // Less volatility for longer periods
+    const variation = (Math.sin(i * 0.2) + Math.random() * 0.4 - 0.2) * volatilityFactor;
     const price = basePrice * (1 + variation);
     
     prices.push({
@@ -306,7 +317,6 @@ export const fetchAllChartsData = async () => {
 
     return charts;
   } catch (error) {
-    console.error('Error fetching all charts data:', error);
     // Return charts with mock data as fallback
     return {
       bitcoin: createChartData(

@@ -7,7 +7,9 @@ import dynamic from 'next/dynamic';
 // Dynamic imports for Chart.js components (loaded only when needed)
 const Line = dynamic(() => import('react-chartjs-2').then(mod => ({ default: mod.Line })), {
   ssr: false,
-  loading: () => <div className="h-64 animate-pulse bg-gray-700 rounded"></div>
+  loading: () => <div className="h-96 animate-pulse bg-gray-700 rounded flex items-center justify-center">
+    <div className="text-gray-400">Loading chart...</div>
+  </div>
 });
 
 // Import and register Chart.js components
@@ -45,7 +47,7 @@ import { formatPrice, formatVolume, formatPercentage } from '../../../utils/form
 import { BINANCE_SYMBOLS } from '../../../constants/cryptoConfig';
 
 // Dynamic import for chart service
-const fetchChartData = () => import('../../../services/chartService').then(mod => mod.fetchChartData);
+import { fetchChartData } from '../../../services/chartService';
 
 export default function CoinDetailPage() {
   const params = useParams();
@@ -211,7 +213,7 @@ export default function CoinDetailPage() {
 
   // Load historical chart data
   const loadHistoricalData = useCallback(async (days) => {
-    if (!coinInfo || !isClient) return;
+    if (!coinInfo || !coinInfo.id || !isClient) return;
     
     setApiError(false);
     try {
@@ -223,7 +225,6 @@ export default function CoinDetailPage() {
         setApiError(true);
       }
     } catch (error) {
-      console.error('Error loading historical data:', error);
       setApiError(true);
     }
   }, [coinInfo, isClient]);
@@ -242,7 +243,7 @@ export default function CoinDetailPage() {
       );
 
       // Only load historical data if we're not in real-time mode
-      if (timeframe !== 'realtime') {
+      if (timeframe !== 'realtime' && coinInfo.id) {
         try {
           const data = await fetchChartData(coinInfo.id, timeframe);
           if (data) {
@@ -252,7 +253,6 @@ export default function CoinDetailPage() {
             setApiError(true);
           }
         } catch (chartError) {
-          console.warn('Historical chart data unavailable');
           setApiError(true);
         }
       }
@@ -302,7 +302,6 @@ export default function CoinDetailPage() {
         communityScore: ((seed * 19) % 100)
       });;
     } catch (error) {
-      console.error('Error loading coin data:', error);
       setApiError(true);
     }
   }, [coinInfo, binanceSymbol, timeframe, isClient, connectWebSocket, handleWebSocketMessage]);
@@ -341,6 +340,31 @@ export default function CoinDetailPage() {
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    // Explicit layout constraints
+    layout: {
+      padding: {
+        top: 20,
+        right: 20,
+        bottom: 20,
+        left: 20
+      }
+    },
+    // Performance optimizations for large datasets (safer options)
+    animation: {
+      duration: 300, // Reduced animations for better performance on large datasets
+    },
+    // Remove problematic parsing options that might cause JSON errors
+    // Optimize elements for performance
+    elements: {
+      point: {
+        radius: 0, // Hide points by default for better performance
+        hoverRadius: 6,
+      },
+      line: {
+        tension: 0.1, // Reduce tension for smoother performance
+        borderWidth: 2,
+      },
+    },
     plugins: {
       legend: {
         display: false,
@@ -353,6 +377,14 @@ export default function CoinDetailPage() {
         borderWidth: 1,
         cornerRadius: 8,
         displayColors: false,
+        // Performance optimization - only show tooltips for subset of points on large datasets
+        filter: function(tooltipItem) {
+          const dataLength = tooltipItem.dataset.data.length;
+          if (dataLength > 50) {
+            return tooltipItem.dataIndex % Math.max(1, Math.floor(dataLength / 30)) === 0;
+          }
+          return true;
+        },
         callbacks: {
           label: function (context) {
             return `$${context.parsed.y.toLocaleString()}`;
@@ -370,7 +402,11 @@ export default function CoinDetailPage() {
           color: '#9CA3AF',
           font: {
             size: 12
-          }
+          },
+          // Performance optimizations for large datasets
+          maxTicksLimit: 12,
+          autoSkip: true,
+          autoSkipPadding: 10,
         }
       },
       y: {
@@ -383,6 +419,7 @@ export default function CoinDetailPage() {
           font: {
             size: 12
           },
+          maxTicksLimit: 10,
           callback: function (value) {
             return '$' + value.toLocaleString();
           }
@@ -522,9 +559,23 @@ export default function CoinDetailPage() {
               </div>
 
               {/* Chart */}
-              <div className="h-96">
-                {chartData ? (
-                  <Line data={chartData} options={chartOptions} />
+              <div className="h-80 max-h-80 overflow-hidden">
+                {chartData && chartData.labels && chartData.datasets && chartData.datasets.length > 0 ? (
+                  <div className="h-full">
+                    {/* Performance indicator - show data points count */}
+                    {chartData.datasets && chartData.datasets[0] && chartData.datasets[0].data && (
+                      <div className="text-xs text-gray-500 mb-2 text-right">
+                        Data points: {chartData.datasets[0].data.length} | 
+                        Timeframe: {timeframe === 'realtime' ? 'Real-time' : `${timeframe}${timeframe === '1' ? 'D' : timeframe === '7' ? 'D' : timeframe === '30' ? 'D' : timeframe === '90' ? 'D' : 'D'}`}
+                        {timeframe !== 'realtime' && (
+                          <span className="ml-2 px-1 py-0.5 bg-green-600 text-green-100 rounded text-xs">
+                            Binance API
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <Line data={chartData} options={chartOptions} />
+                  </div>
                 ) : (
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center text-gray-400">

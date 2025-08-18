@@ -48,6 +48,20 @@ body {
   100% { background-position: 0% 50%; }
 }
 
+/* Simple Chart.js container constraints */
+.chart-container {
+  position: relative;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+/* Simple canvas constraints */
+.chart-container canvas {
+  max-height: 100% !important;
+  max-width: 100% !important;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;

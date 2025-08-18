@@ -303,7 +303,6 @@ const AdvancedFilters = React.memo(function AdvancedFilters({
     });
 
     onFilteredDataChange(filteredData);
-    console.log('Filtered data updated:', filteredData.length, 'items'); // Debug log
   }, [cryptoData, filters, searchTerm, onFilteredDataChange]);
 
   // Handle filter changes

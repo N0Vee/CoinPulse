@@ -75,15 +75,13 @@ export default function Home() {
             setEthereumChart(chartData.ethereum);
             setBnbChart(chartData.binancecoin);
         } catch (error) {
-            console.error('Error fetching chart data:', error);
+            // Handle error silently with fallback
         }
     }, []);
 
     // Memoized WebSocket message handler
     const handleWebSocketMessage = useCallback((processedData) => {
         const { symbolInfo, price, change24h, volume24h } = processedData;
-
-        console.log('Received WebSocket data:', { symbolInfo, price, change24h, volume24h }); // Debug log
 
         setCryptoData(prevData => {
             const existingIndex = prevData.findIndex(item => item.id === symbolInfo.id);
@@ -100,12 +98,10 @@ export default function Home() {
             if (existingIndex >= 0) {
                 const newData = [...prevData];
                 newData[existingIndex] = updatedItem;
-                console.log('Updated crypto data:', newData); // Debug log
                 return newData;
             }
             
             const newData = [...prevData, updatedItem];
-            console.log('Added new crypto data:', newData); // Debug log
             return newData;
         });
 
