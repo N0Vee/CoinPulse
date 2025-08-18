@@ -5,6 +5,11 @@ export const useWebSocket = () => {
   const reconnectTimeoutRef = useRef(null);
 
   const connectWebSocket = useCallback((binanceSymbols, onMessage, onStatusChange, onLoading) => {
+    // Check if we're in the browser environment
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     try {
       // Create WebSocket connection to Binance combined streams
       const streams = Object.keys(binanceSymbols)

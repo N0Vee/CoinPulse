@@ -1,7 +1,31 @@
+import React, { useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
+} from 'chart.js';
 
-export default function ChartSection({ chartData, title, description }) {
-  const chartOptions = {
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
+const ChartSection = React.memo(function ChartSection({ chartData, title, description }) {
+  const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -9,10 +33,10 @@ export default function ChartSection({ chartData, title, description }) {
         display: false,
       },
       tooltip: {
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        titleColor: '#374151',
-        bodyColor: '#374151',
-        borderColor: '#E5E7EB',
+        backgroundColor: 'rgba(31, 41, 55, 0.95)',
+        titleColor: '#E5E7EB',
+        bodyColor: '#E5E7EB',
+        borderColor: '#4B5563',
         borderWidth: 1,
         cornerRadius: 8,
         displayColors: false,
@@ -39,7 +63,7 @@ export default function ChartSection({ chartData, title, description }) {
       y: {
         display: true,
         grid: {
-          color: '#F3F4F6',
+          color: '#374151',
         },
         ticks: {
           color: '#9CA3AF',
@@ -56,13 +80,13 @@ export default function ChartSection({ chartData, title, description }) {
       intersect: false,
       mode: 'index',
     },
-  };
+  }), []);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+    <div className="bg-gray-800 rounded-2xl border border-gray-700 p-6 shadow-xl">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-        <p className="text-sm text-gray-500">{description}</p>
+        <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+        <p className="text-sm text-gray-400">{description}</p>
       </div>
       {chartData ? (
         <div className="h-64">
@@ -70,12 +94,11 @@ export default function ChartSection({ chartData, title, description }) {
         </div>
       ) : (
         <div className="h-64 flex items-center justify-center">
-          <div className="flex items-center text-blue-500">
-            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-3"></div>
-            Loading chart...
-          </div>
+          <div className="text-gray-400">No chart data available</div>
         </div>
       )}
     </div>
   );
-}
+});
+
+export default ChartSection;

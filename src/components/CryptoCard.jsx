@@ -1,14 +1,26 @@
+import React from 'react';
 import { formatPrice, formatVolume, formatPercentage, calculatePriceRange } from '../utils/formatters';
+import { useRouter } from 'next/navigation';
 
-export default function CryptoCard({ crypto, index }) {
+const CryptoCard = React.memo(function CryptoCard({ crypto, index }) {
   const { low, high } = calculatePriceRange(crypto.price, crypto.change24h);
+  const router = useRouter();
+
+  const handleViewChart = () => {
+    router.push(`/coin/${crypto.symbol.toLowerCase()}`);
+  };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+    <div 
+      className={`bg-gray-800 rounded-2xl border border-gray-700 p-6 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all duration-300 group opacity-0`}
+      style={{
+        animation: `fadeInUp 0.6s ease-out ${index * 0.1}s forwards`
+      }}
+    >
       {/* Header with Icon and Name */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center mr-3 bg-gradient-to-br from-blue-50 to-indigo-100 group-hover:from-blue-100 group-hover:to-indigo-200 transition-all duration-300">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center mr-3 bg-gradient-to-br from-gray-700 to-gray-600 transition-all duration-300 group-hover:from-blue-600 group-hover:to-purple-600">
             <img
               src={`https://assets.coincap.io/assets/icons/${crypto.symbol.toLowerCase()}@2x.png`}
               alt={crypto.name}
@@ -23,26 +35,26 @@ export default function CryptoCard({ crypto, index }) {
             </div>
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+            <h3 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">
               {crypto.name}
             </h3>
-            <p className="text-sm text-gray-500 font-medium">{crypto.symbol}</p>
+            <p className="text-sm text-gray-400 font-medium">{crypto.symbol}</p>
           </div>
         </div>
 
         {/* Rank Badge */}
-        <div className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-1 rounded-full">
+        <div className="bg-gray-700 text-gray-300 text-xs font-medium px-2 py-1 rounded-full">
           #{index + 1}
         </div>
       </div>
 
       {/* Price Section */}
       <div className="mb-4">
-        <div className="text-2xl font-bold text-gray-900 mb-1">
+        <div className="text-2xl font-medium text-white mb-1">
           {formatPrice(crypto.price)}
         </div>
         <div className="flex items-center">
-          <div className={`flex items-center text-sm font-semibold px-2 py-1 rounded-full ${
+          <div className={`flex items-center text-sm px-2 py-1 rounded-full ${
             crypto.change24h >= 0
               ? 'bg-green-100 text-green-700'
               : 'bg-red-100 text-red-700'
@@ -57,30 +69,30 @@ export default function CryptoCard({ crypto, index }) {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-gray-50 rounded-xl p-3">
-          <div className="text-xs text-gray-500 font-medium mb-1">24h Volume</div>
-          <div className="text-sm font-bold text-gray-900">
+        <div className="bg-gray-700 rounded-xl p-3">
+          <div className="text-xs text-gray-400 font-medium mb-1">24h Volume</div>
+          <div className="text-sm font-bold text-white">
             {formatVolume(crypto.volume24h)}
           </div>
         </div>
-        <div className="bg-gray-50 rounded-xl p-3">
-          <div className="text-xs text-gray-500 font-medium mb-1">Market Cap</div>
-          <div className="text-sm font-bold text-gray-900">
+        <div className="bg-gray-700 rounded-xl p-3">
+          <div className="text-xs text-gray-400 font-medium mb-1">Market Cap</div>
+          <div className="text-sm font-bold text-white">
             {formatVolume(crypto.price * 1000000000)} {/* Estimated market cap */}
           </div>
         </div>
       </div>
 
       {/* Price Change Indicator */}
-      <div className="mt-4 pt-4 border-t border-gray-100">
+      <div className="mt-4 pt-4 border-t border-gray-700">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-gray-500">24h Range</span>
+          <span className="text-gray-400">24h Range</span>
           <div className="flex items-center space-x-2">
-            <span className="text-red-500 font-medium">
+            <span className="text-red-400 font-medium">
               {formatPrice(low)}
             </span>
             <div className="w-8 h-1 bg-gradient-to-r from-red-400 via-yellow-400 to-green-400 rounded-full"></div>
-            <span className="text-green-500 font-medium">
+            <span className="text-green-400 font-medium">
               {formatPrice(high)}
             </span>
           </div>
@@ -89,10 +101,15 @@ export default function CryptoCard({ crypto, index }) {
 
       {/* Action Buttons */}
       <div className="mt-4 flex space-x-2">
-        <button className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-medium py-2 rounded-lg transition-colors duration-200 w-full">
+        <button 
+          onClick={handleViewChart}
+          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-lg transition-colors duration-200 w-full"
+        >
           View Chart
         </button>
       </div>
     </div>
   );
-}
+});
+
+export default CryptoCard;

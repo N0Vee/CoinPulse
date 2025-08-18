@@ -1,6 +1,31 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import dynamic from 'next/dynamic';
+
+// Lazy load heavy components
+const ChartSection = lazy(() => import('../components/ChartSection'));
+const AdvancedFilters = dynamic(() => import('../components/AdvancedFilters'), {
+  ssr: false,
+  loading: () => <div className="h-16 animate-pulse bg-gray-800 rounded-lg"></div>
+});
+
+// Components
+import Navbar from '../components/Navbar';
+import CryptoCard from '../components/CryptoCard';
+import CryptoCardSkeleton from '../components/CryptoCardSkeleton';
+import LoadingSpinner from '../components/LoadingSpinner';
+
+// Hooks and Services
+import { useWebSocket } from '../hooks/useWebSocket';
+
+// Constants
+import { BINANCE_SYMBOLS } from '../constants/cryptoConfig';
+
+// Dynamic import for chart service (only when needed)
+const fetchAllChartsData = () => import('../services/chartService').then(mod => mod.fetchAllChartsData);
+
+// Register Chart.js components
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -12,19 +37,6 @@ import {
     Legend,
     Filler
 } from 'chart.js';
-
-// Components
-import Navbar from '../components/Navbar';
-import ChartSection from '../components/ChartSection';
-import SearchAndSort from '../components/SearchAndSort';
-import CryptoCard from '../components/CryptoCard';
-
-// Hooks and Services
-import { useWebSocket } from '../hooks/useWebSocket';
-import { fetchAllChartsData } from '../services/chartService';
-
-// Constants
-import { BINANCE_SYMBOLS, CHART_CONFIGS } from '../constants/cryptoConfig';
 
 ChartJS.register(
   CategoryScale,
@@ -39,6 +51,7 @@ ChartJS.register(
 
 export default function Home() {
     const [cryptoData, setCryptoData] = useState([]);
+    const [filteredData, setFilteredData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('Disconnected');
     const [bitcoinChart, setBitcoinChart] = useState(null);
@@ -49,27 +62,32 @@ export default function Home() {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('price');
     const [sortOrder, setSortOrder] = useState('desc');
+    const [isClient, setIsClient] = useState(false);
 
     const { connectWebSocket, disconnect, refresh } = useWebSocket();
 
-    const initializeChartData = async () => {
+    // Memoized chart data initialization
+    const initializeChartData = useCallback(async () => {
         try {
-            const chartData = await fetchAllChartsData();
+            const chartDataLoader = await fetchAllChartsData();
+            const chartData = await chartDataLoader();
             setBitcoinChart(chartData.bitcoin);
             setEthereumChart(chartData.ethereum);
             setBnbChart(chartData.binancecoin);
         } catch (error) {
             console.error('Error fetching chart data:', error);
         }
-    };
+    }, []);
 
+    // Memoized WebSocket message handler
     const handleWebSocketMessage = useCallback((processedData) => {
         const { symbolInfo, price, change24h, volume24h } = processedData;
 
-        setCryptoData(prevData => {
-            const newData = [...prevData];
-            const existingIndex = newData.findIndex(item => item.id === symbolInfo.id);
+        console.log('Received WebSocket data:', { symbolInfo, price, change24h, volume24h }); // Debug log
 
+        setCryptoData(prevData => {
+            const existingIndex = prevData.findIndex(item => item.id === symbolInfo.id);
+            
             const updatedItem = {
                 id: symbolInfo.id,
                 name: symbolInfo.name,
@@ -80,17 +98,21 @@ export default function Home() {
             };
 
             if (existingIndex >= 0) {
+                const newData = [...prevData];
                 newData[existingIndex] = updatedItem;
-            } else {
-                newData.push(updatedItem);
+                console.log('Updated crypto data:', newData); // Debug log
+                return newData;
             }
-
+            
+            const newData = [...prevData, updatedItem];
+            console.log('Added new crypto data:', newData); // Debug log
             return newData;
         });
 
         setLastUpdate(new Date());
     }, []);
 
+    // Memoized refresh handler
     const handleRefresh = useCallback(() => {
         refresh(
             BINANCE_SYMBOLS,
@@ -101,6 +123,7 @@ export default function Home() {
     }, [refresh, handleWebSocketMessage]);
 
     useEffect(() => {
+        setIsClient(true);
         setLastUpdate(new Date());
         initializeChartData();
 
@@ -115,45 +138,16 @@ export default function Home() {
         return () => {
             disconnect();
         };
-    }, [connectWebSocket, disconnect, handleWebSocketMessage]);
+    }, [connectWebSocket, disconnect, handleWebSocketMessage, initializeChartData]);
 
-    // Filter and sort crypto data
-    const filteredAndSortedData = cryptoData
-        .filter(crypto =>
-            crypto.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            crypto.symbol.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        .sort((a, b) => {
-            let aValue, bValue;
+    // Initialize filtered data when cryptoData changes
+    useEffect(() => {
+        if (cryptoData.length > 0 && filteredData.length === 0) {
+            setFilteredData(cryptoData);
+        }
+    }, [cryptoData, filteredData.length]);
 
-            switch (sortBy) {
-                case 'name':
-                    aValue = a.name.toLowerCase();
-                    bValue = b.name.toLowerCase();
-                    break;
-                case 'price':
-                    aValue = a.price;
-                    bValue = b.price;
-                    break;
-                case 'change':
-                    aValue = a.change24h;
-                    bValue = b.change24h;
-                    break;
-                case 'volume':
-                    aValue = a.volume24h;
-                    bValue = b.volume24h;
-                    break;
-                default:
-                    return 0;
-            }
-
-            if (sortOrder === 'asc') {
-                return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-            } else {
-                return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-            }
-        });
-
+    // Handle sorting (now handled by AdvancedFilters)
     const handleSort = (field) => {
         if (sortBy === field) {
             setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -163,8 +157,8 @@ export default function Home() {
         }
     };
 
-    // Get current chart data based on selected crypto
-    const getCurrentChart = () => {
+    // Memoized chart data and title getters
+    const getCurrentChart = useMemo(() => {
         switch (selectedChart) {
             case 'ethereum':
                 return ethereumChart;
@@ -173,10 +167,9 @@ export default function Home() {
             default:
                 return bitcoinChart;
         }
-    };
+    }, [selectedChart, bitcoinChart, ethereumChart, bnbChart]);
 
-    // Get chart title based on selected crypto
-    const getChartTitle = () => {
+    const getChartTitle = useMemo(() => {
         switch (selectedChart) {
             case 'ethereum':
                 return 'Ethereum Price (7 Days)';
@@ -185,9 +178,10 @@ export default function Home() {
             default:
                 return 'Bitcoin Price (7 Days)';
         }
-    };
+    }, [selectedChart]);
 
-    const chartOptions = {
+    // Memoized chart options
+    const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -242,10 +236,19 @@ export default function Home() {
       intersect: false,
       mode: 'index',
     },
-  };
+  }), []);
+
+  // Early return for SSR
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Initializing..." variant="crypto" color="blue" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-900">
       {/* Navbar */}
       <Navbar
         connectionStatus={connectionStatus}
@@ -260,72 +263,100 @@ export default function Home() {
           {/* Left Column - Content */}
           <div>
             <div className="mb-8">
-              <h1 className="text-5xl lg:text-6xl font-light text-gray-900 mb-6">
+              <h1 className="text-5xl lg:text-6xl font-light text-white mb-6">
                 Track Crypto<br />
-                <span className="font-semibold text-blue-500">In Real-Time</span>
+                <span className="font-semibold text-blue-400">In Real-Time</span>
               </h1>
-              <p className="text-xl text-gray-600 font-light mb-8 leading-relaxed">
+              <p className="text-xl text-gray-300 font-light mb-8 leading-relaxed">
                 View live charts and prices for Bitcoin, Ethereum, and more. Clear design, real-time updates.
               </p>
             </div>
           </div>
 
           {/* Right Column - Dynamic Chart */}
-          <ChartSection
-            title={getChartTitle()}
-            chartData={getCurrentChart()}
-            chartOptions={chartOptions}
-          />
+          <Suspense fallback={
+            <div className="h-96 flex items-center justify-center bg-gray-800/50 backdrop-blur-sm rounded-3xl border border-gray-700">
+              <LoadingSpinner size="lg" text="Loading chart..." variant="pulse" color="blue" />
+            </div>
+          }>
+            <ChartSection
+              title={getChartTitle}
+              chartData={getCurrentChart}
+              chartOptions={chartOptions}
+            />
+          </Suspense>
         </div>
       </div>
 
       {/* Live Prices Section */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-light text-gray-900 mb-2">Live Prices</h2>
-          <p className="text-gray-500 mb-6">Real-time cryptocurrency data via Binance WebSocket</p>
+          <h2 className="text-3xl font-light text-white mb-2">Live Prices</h2>
+          <p className="text-gray-400 mb-6">Real-time cryptocurrency data via Binance WebSocket</p>
 
-          {/* Search and Sort Controls */}
-          <SearchAndSort
+          {/* Advanced Filters */}
+          <AdvancedFilters
+            cryptoData={cryptoData}
+            onFilteredDataChange={setFilteredData}
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onSort={handleSort}
           />
         </div>
 
         {/* Crypto Table */}
         {loading && cryptoData.length === 0 ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="flex items-center text-blue-500">
-              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-3"></div>
-              Loading prices...
+          <div className="space-y-4">
+            <div className="flex justify-center items-center py-8">
+              <LoadingSpinner 
+                size="lg" 
+                text="Loading cryptocurrency data..." 
+                variant="crypto"
+                color="blue"
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, index) => (
+                <CryptoCardSkeleton key={index} index={index} />
+              ))}
             </div>
           </div>
         ) : cryptoData.length === 0 ? (
           <div className="flex justify-center items-center h-64">
-            <div className="text-gray-500 text-center">
+            <div className="text-gray-400 text-center">
               <div className="mb-2">No data received yet</div>
               <div className="text-sm">Waiting for WebSocket data...</div>
             </div>
           </div>
-        ) : filteredAndSortedData.length === 0 && searchTerm ? (
+        ) : filteredData.length === 0 && searchTerm ? (
           <div className="flex justify-center items-center h-64">
-            <div className="text-gray-500 text-center">
+            <div className="text-gray-400 text-center">
               <div className="mb-2">No cryptocurrencies found</div>
-              <div className="text-sm">Try adjusting your search term</div>
+              <div className="text-sm">Try adjusting your search term or filters</div>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredAndSortedData.map((crypto, index) => (
-              <CryptoCard
-                key={crypto.id}
-                crypto={crypto}
-                index={index}
-              />
-            ))}
+          <div>
+            {/* Results Counter */}
+            {filteredData.length > 0 && (
+              <div className="flex justify-between items-center mb-6">
+                <div className="text-gray-400">
+                  Showing {filteredData.length} of {cryptoData.length} cryptocurrencies
+                </div>
+                <div className="text-sm text-gray-500">
+                  Last updated: {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Never'}
+                </div>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredData.map((crypto, index) => (
+                <CryptoCard
+                  key={crypto.id}
+                  crypto={crypto}
+                  index={index}
+                />
+              ))}
+            </div>
           </div>
         )}
 
@@ -333,7 +364,7 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-gray-50 border-t border-gray-100 mt-16">
+      <footer className="bg-gray-800 border-t border-gray-700 mt-16">
         <div className="max-w-7xl mx-auto px-6 py-8 text-center">
           <p className="text-gray-400 text-sm">
             Real-time data powered by Binance WebSocket • Charts by CoinGecko API
