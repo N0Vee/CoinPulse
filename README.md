@@ -22,15 +22,7 @@ Coin Pulse is a modern crypto tracking website that provides real-time price dat
 - **Visual indicators**: Green/red color coding for price movements
 - **Manual refresh** option for instant updates
 
-### 🎨 **Design & UX**
-- Minimalist white and light blue color scheme
-- Smooth animations and hover effects
-- Mobile-responsive design
-- Professional typography with clean layouts
-- Interactive charts powered by Chart.js
-
 ## 🛠️ Tech Stack
-
 - **Framework**: [Next.js 15.4.6](https://nextjs.org/) with React 19
 - **Styling**: [Tailwind CSS 4.0](https://tailwindcss.com/)
 - **Charts**: [Chart.js](https://www.chartjs.org/) with react-chartjs-2
@@ -77,11 +69,6 @@ Coin Pulse is a modern crypto tracking website that provides real-time price dat
    Navigate to [http://localhost:3000](http://localhost:3000) to see the application.
 
 ## 📱 Usage
-
-### Landing Page
-- View the professional landing page with live Bitcoin chart
-- See current Bitcoin price and 24h change
-- Click "Start Tracking" to enter the main application
 
 ### Price Tracking
 - Monitor real-time prices for 5 major cryptocurrencies
@@ -135,29 +122,7 @@ Coin Pulse uses the free [CoinGecko API](https://www.coingecko.com/en/api) to fe
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
-1. Push your code to GitHub
-2. Import your repository on [Vercel](https://vercel.com)
-3. Deploy with one click!
-
-### Other Platforms
-- **Netlify**: Connect your GitHub repo and deploy
-- **Railway**: One-click deployment from GitHub
-- **Self-hosted**: Run `npm run build` and serve the `out` folder
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is open source and available under the [MIT License](LICENSE).
+### Vercel 
 
 ## 🙏 Acknowledgments
 
