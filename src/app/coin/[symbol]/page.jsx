@@ -491,20 +491,6 @@ export default function CoinDetailPage() {
             </div>
           </div>
           
-          {/* Favorite Button */}
-          <div className="ml-4">
-            <FavoriteButton
-              crypto={{
-                symbol: symbol,
-                name: coinInfo.name,
-                id: coinInfo.id
-              }}
-              isFavorite={isFavorite(symbol)}
-              onToggle={toggleFavorite}
-              size="lg"
-              showLabel={true}
-            />
-          </div>
         </div>
 
         <div className="space-y-6 sm:space-y-8">
